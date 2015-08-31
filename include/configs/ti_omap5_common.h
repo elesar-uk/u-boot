@@ -74,46 +74,67 @@
 	DEFAULT_LINUX_BOOT_ENV \
 	"console=" CONSOLEDEV ",115200n8\0" \
 	"fdtfile=undefined\0" \
-	"bootpart=0:2\0" \
-	"bootdir=/boot\0" \
+	"bootpart=0:1\0" \
+	"bootdir=\0" \
 	"bootfile=zImage\0" \
+	"fdtdir=/dtbs\0" \
 	"usbtty=cdc_acm\0" \
 	"vram=16M\0" \
 	"partitions=" PARTS_DEFAULT "\0" \
 	"optargs=\0" \
 	"mmcdev=0\0" \
-	"mmcroot=/dev/mmcblk0p2 rw\0" \
-	"mmcrootfstype=ext4 rootwait\0" \
+	"mmcroot=/dev/mmcblk0p2 ro\0" \
+	"mmcrootfstype=ext4 rootwait fixrtc\0" \
 	"mmcargs=setenv bootargs console=${console} " \
 		"${optargs} " \
-		"vram=${vram} " \
 		"root=${mmcroot} " \
-		"rootfstype=${mmcrootfstype}\0" \
-	"loadbootscript=fatload mmc ${mmcdev} ${loadaddr} boot.scr\0" \
-	"bootscript=echo Running bootscript from mmc${mmcdev} ...; " \
+		"rootfstype=${mmcrootfstype} " \
+		"${cmdline}\0" \
+	"loadbootscript=load ${interface} ${bootpart} ${loadaddr} boot.scr\0" \
+	"bootscript=echo Running bootscript from ${interface}${mmcdev} ...; " \
 		"source ${loadaddr}\0" \
 	"bootenv=uEnv.txt\0" \
-	"loadbootenv=fatload mmc ${mmcdev} ${loadaddr} ${bootenv}\0" \
-	"importbootenv=echo Importing environment from mmc${mmcdev} ...; " \
+	"loadbootenv=load ${interface} ${bootpart} ${loadaddr} ${bootenv}\0" \
+	"importbootenv=echo Importing environment from ${interface}${mmcdev} ...; " \
 		"env import -t ${loadaddr} ${filesize}\0" \
-	"loadimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
-	"mmcboot=mmc dev ${mmcdev}; " \
-		"if mmc rescan; then " \
-			"echo SD/MMC found on device ${mmcdev};" \
-			"if run loadbootenv; then " \
-				"echo Loaded environment from ${bootenv};" \
-				"run importbootenv;" \
-			"fi;" \
-			"if test -n $uenvcmd; then " \
-				"echo Running uenvcmd ...;" \
-				"run uenvcmd;" \
-			"fi;" \
-			"if run loadimage; then " \
-				"run loadfdt; " \
-				"echo Booting from mmc${mmcdev} ...; " \
-				"run mmcargs; " \
-				"bootz ${loadaddr} - ${fdtaddr}; " \
-			"fi;" \
+	"loadimage=load ${interface} ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
+	"loadrd=load ${interface} ${bootpart} ${rdaddr} ${bootdir}/${rdfile}; setenv rdsize ${filesize}\0" \
+	"loadfdt=echo loading ${fdtdir}/${fdtfile} ...;  load ${interface} ${bootpart} ${fdtaddr} ${fdtdir}/${fdtfile}\0" \
+	"mmcboot=${interface} dev ${mmcdev}; " \
+		"if ${interface} rescan; then " \
+			"echo Scanning ${interface} device ${mmcdev};" \
+			"setenv bootpart ${mmcdev}:1; " \
+			"echo Checking for: /uEnv.txt ...;" \
+			"if test -e ${interface} ${bootpart} /uEnv.txt; then " \
+				"load ${interface} ${bootpart} ${loadaddr} /uEnv.txt;" \
+				"env import -t ${loadaddr} ${filesize};" \
+				"echo Loaded environment from /uEnv.txt;" \
+				"echo Checking if uenvcmd is set ...;" \
+				"if test -n ${uenvcmd}; then " \
+					"echo Running uenvcmd ...;" \
+					"run uenvcmd;" \
+				"fi;" \
+			"fi; " \
+			"echo Checking for: /boot/uEnv.txt ...;" \
+			"for i in 1 2 3 4 5 6 7 ; do " \
+				"setenv mmcpart ${i};" \
+				"setenv bootpart ${mmcdev}:${mmcpart};" \
+				"if test -e ${interface} ${bootpart} /boot/uEnv.txt; then " \
+					"load ${interface} ${bootpart} ${loadaddr} /boot/uEnv.txt;" \
+					"env import -t ${loadaddr} ${filesize};" \
+					"echo Loaded environment from /boot/uEnv.txt;" \
+					"if test -n ${dtb}; then " \
+						"setenv fdtfile ${dtb};" \
+						"echo debug: [dtb=${fdtfile}] ...;" \
+					"fi;" \
+					"echo Checking if uname_r is set in /boot/uEnv.txt ...;" \
+					"if test -n ${uname_r}; then " \
+						"echo debug: [uname_r=${uname_r}] ...;" \
+						"setenv mmcroot /dev/mmcblk${mmcdev}p${mmcpart} ro;" \
+						"run uname_boot;" \
+					"fi;" \
+				"fi;" \
+			"done;" \
 		"fi;\0" \
 	"findfdt="\
 		"if test $board_name = omap5_uevm; then " \
@@ -126,22 +147,161 @@
 			"setenv fdtfile am57xx-beagle-x15.dtb; fi;" \
 		"if test $fdtfile = undefined; then " \
 			"echo WARNING: Could not determine device tree to use; fi; \0" \
-	"loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile};\0" \
+	"scsiboot=${interface} reset ; " \
+		"if ${interface} dev ${mmcdev}; then " \
+			"echo Scanning ${interface} device ${mmcdev};" \
+			"setenv bootpart ${mmcdev}:1; " \
+			"echo Checking for: /uEnv.txt ...;" \
+			"if test -e ${interface} ${bootpart} /uEnv.txt; then " \
+				"load ${interface} ${bootpart} ${loadaddr} /uEnv.txt;" \
+				"env import -t ${loadaddr} ${filesize};" \
+				"echo Loaded environment from /uEnv.txt;" \
+				"echo Checking if uenvcmd is set ...;" \
+				"if test -n ${uenvcmd}; then " \
+					"echo Running uenvcmd ...;" \
+					"run uenvcmd;" \
+				"fi;" \
+			"fi; " \
+			"echo Checking for: /boot/uEnv.txt ...;" \
+			"for i in 1 2 3 4 ; do " \
+				"setenv mmcpart ${i};" \
+				"setenv bootpart ${mmcdev}:${mmcpart};" \
+				"if test -e ${interface} ${bootpart} /boot/uEnv.txt; then " \
+					"load ${interface} ${bootpart} ${loadaddr} /boot/uEnv.txt;" \
+					"env import -t ${loadaddr} ${filesize};" \
+					"echo Loaded environment from /boot/uEnv.txt;" \
+					"if test -n ${dtb}; then " \
+						"setenv fdtfile ${dtb};" \
+						"echo debug: [dtb=${fdtfile}] ...;" \
+					"fi;" \
+					"echo Checking if uname_r is set in /boot/uEnv.txt ...;" \
+					"if test -n ${uname_r}; then " \
+						"echo debug: [uname_r=${uname_r}] ...;" \
+						"setenv mmcroot /dev/sda${mmcpart} ro;" \
+						"run uname_boot;" \
+					"fi;" \
+				"fi;" \
+			"done;" \
+		"fi;\0" \
+	"usbboot=${interface} reset ; " \
+		"if ${interface} dev ${mmcdev}; then " \
+			"echo Scanning ${interface} device ${mmcdev};" \
+			"setenv bootpart ${mmcdev}:1; " \
+			"echo Checking for: /uEnv.txt ...;" \
+			"if test -e ${interface} ${bootpart} /uEnv.txt; then " \
+				"load ${interface} ${bootpart} ${loadaddr} /uEnv.txt;" \
+				"env import -t ${loadaddr} ${filesize};" \
+				"echo Loaded environment from /uEnv.txt;" \
+				"echo Checking if uenvcmd is set in /uEnv.txt ...;" \
+				"if test -n ${uenvcmd}; then " \
+					"echo Running uenvcmd ...;" \
+					"run uenvcmd;" \
+				"fi;" \
+			"fi; " \
+			"echo Checking for: /boot/uEnv.txt ...;" \
+			"for i in 1 2 3 4 ; do " \
+				"setenv mmcpart ${i};" \
+				"setenv bootpart ${mmcdev}:${mmcpart};" \
+				"if test -e ${interface} ${bootpart} /boot/uEnv.txt; then " \
+					"load ${interface} ${bootpart} ${loadaddr} /boot/uEnv.txt;" \
+					"env import -t ${loadaddr} ${filesize};" \
+					"echo Loaded environment from /boot/uEnv.txt;" \
+					"if test -n ${dtb}; then " \
+						"setenv fdtfile ${dtb};" \
+						"echo debug: [dtb=${fdtfile}] ...;" \
+					"fi;" \
+					"echo Checking if uname_r is set in /boot/uEnv.txt ...;" \
+					"if test -n ${uname_r}; then " \
+						"echo debug: [uname_r=${uname_r}] ...;" \
+						"setenv mmcroot /dev/sda${mmcpart} ro;" \
+						"run uname_boot;" \
+					"fi;" \
+				"fi;" \
+			"done;" \
+		"fi;\0" \
+	"uname_boot="\
+		"setenv bootdir /boot; " \
+		"setenv bootfile vmlinuz-${uname_r}; " \
+		"if test -e ${interface} ${bootpart} ${bootdir}/${bootfile}; then " \
+			"echo loading ${bootdir}/${bootfile} ...; "\
+			"run loadimage;" \
+			"setenv fdtdir /boot/dtbs/${uname_r}; " \
+			"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+				"run loadfdt;" \
+			"else " \
+				"setenv fdtdir /usr/lib/linux-image-${uname_r}; " \
+				"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+					"run loadfdt;" \
+				"else " \
+					"setenv fdtdir /lib/firmware/${uname_r}/device-tree; " \
+					"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+						"run loadfdt;" \
+					"else " \
+						"setenv fdtdir /boot/dtb-${uname_r}; " \
+						"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+							"run loadfdt;" \
+						"else " \
+							"setenv fdtdir /boot/dtbs; " \
+							"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+								"run loadfdt;" \
+							"else " \
+								"setenv fdtdir /boot/dtb; " \
+								"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+									"run loadfdt;" \
+								"else " \
+									"setenv fdtdir /boot; " \
+									"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+										"run loadfdt;" \
+									"else " \
+										"echo; echo unable to find ${fdtfile} ...; echo booting legacy ...;"\
+										"run mmcargs;" \
+										"echo debug: [${bootargs}] ... ;" \
+										"echo debug: [bootz ${loadaddr}] ... ;" \
+										"bootz ${loadaddr}; " \
+									"fi;" \
+								"fi;" \
+							"fi;" \
+						"fi;" \
+					"fi;" \
+				"fi;" \
+			"fi; " \
+			"setenv rdfile initrd.img-${uname_r}; " \
+			"if test -e ${interface} ${bootpart} ${bootdir}/${rdfile}; then " \
+				"echo loading ${bootdir}/${rdfile} ...; "\
+				"run loadrd;" \
+				"if test -n ${uuid}; then " \
+					"setenv mmcroot UUID=${uuid} ro;" \
+				"else " \
+					"echo Warning: missing: uuid= so root=GUESS ...;" \
+				"fi;" \
+				"echo debug: [root=${mmcroot}] ...;" \
+				"run mmcargs;" \
+				"echo debug: [${bootargs}] ... ;" \
+				"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+				"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+			"else " \
+				"echo Warning: missing: /boot/initrd.img-${uname_r} ...;" \
+				"echo debug: [root=${mmcroot}] ...;" \
+				"run mmcargs;" \
+				"echo debug: [${bootargs}] ... ;" \
+				"echo debug: [bootz ${loadaddr} - ${fdtaddr}] ... ;" \
+				"bootz ${loadaddr} - ${fdtaddr}; " \
+			"fi;" \
+		"fi;\0" \
 	DFUARGS \
 	NETARGS \
 
 
 #define CONFIG_BOOTCOMMAND \
-	"if test ${dofastboot} -eq 1; then " \
-		"echo Boot fastboot requested, resetting dofastboot ...;" \
-		"setenv dofastboot 0; saveenv;" \
-		"echo Booting into fastboot ...; fastboot;" \
-	"fi;" \
 	"run findfdt; " \
+	"setenv mmcdev 0; " \
+	"setenv interface usb; " \
+	"run usbboot;" \
+	"setenv interface scsi; " \
+	"run scsiboot;" \
+	"setenv interface mmc; " \
 	"run mmcboot;" \
 	"setenv mmcdev 1; " \
-	"setenv bootpart 1:2; " \
-	"setenv mmcroot /dev/mmcblk0p2 rw; " \
 	"run mmcboot;" \
 	""
 #endif
