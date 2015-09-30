@@ -1,0 +1,6 @@
+ELESAR TITANIUM
+M:	James Barker <jbarker@elesar.co.uk>
+S:	Maintained
+F:	board/elesar/titanium/
+F:	include/configs/elesar_titanium.h
+F:	configs/elesar_titanium_defconfig

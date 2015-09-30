@@ -145,6 +145,8 @@
 			"setenv fdtfile dra72-evm.dtb; fi;" \
 		"if test $board_name = beagle_x15; then " \
 			"setenv fdtfile am57xx-beagle-x15.dtb; fi;" \
+		"if test $board_name = titanium; then " \
+			"setenv fdtfile am57xx-titanium.dtb; fi;" \
 		"if test $fdtfile = undefined; then " \
 			"echo WARNING: Could not determine device tree to use; fi; \0" \
 	"scsiboot=${interface} reset ; " \
