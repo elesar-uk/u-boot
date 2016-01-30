@@ -116,6 +116,7 @@ static void omap5_pbias_config(struct mmc *mmc)
 	palmas_mmc1_poweron_ldo();
 
 	value = readl((*ctrl)->control_pbias);
+	value &= ~SDCARD_BIAS_HIZ_MODE;
 	value |= SDCARD_BIAS_PWRDNZ;
 	writel(value, (*ctrl)->control_pbias);
 	udelay(150); /* wait 150 us */
