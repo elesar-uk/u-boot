@@ -271,8 +271,27 @@ int board_late_init(void)
 
 void set_muxconf_regs_essential(void)
 {
+	uint32_t ctrl_val;
+
 	do_set_mux32((*ctrl)->control_padconf_core_base,
 		     early_padconf, ARRAY_SIZE(early_padconf));
+
+	/* Switch PCIe to two root complexes of 1 lane, set
+	 * the physical coding sublayer delay to nominal, output
+	 * the reference clock on the low jitter clock buffer.
+	 */
+	ctrl_val = readl((*ctrl)->control_pcie_control);
+	ctrl_val = ctrl_val & ~0x5; /* 1 lane */
+	writel(ctrl_val, (*ctrl)->control_pcie_control);
+	ctrl_val = readl((*ctrl)->control_core_control_io2);
+	ctrl_val = ctrl_val & ~(1 << 13); /* 1 lane */
+	writel(ctrl_val, (*ctrl)->control_core_control_io2);
+
+	writel(0x96 << 16, (*ctrl)->control_pcie_pcs);
+
+	ctrl_val = readl((*ctrl)->control_sma_sw_6);
+	ctrl_val = (ctrl_val & ~0x30000) | 0x10000;
+	writel(ctrl_val, (*ctrl)->control_sma_sw_6);
 }
 
 #ifdef CONFIG_IODELAY_RECALIBRATION
