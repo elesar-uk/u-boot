@@ -260,12 +260,19 @@ int board_init(void)
 
 int board_late_init(void)
 {
+	u8 ctrl;
+
+#ifdef CONFIG_LIBATA
 	init_sata(0);
+#endif
 	/*
-	 * DEV_CTRL.DEV_ON = 1 please - else palmas switches off in 8 seconds
-	 * This is the POWERHOLD-in-Low behavior.
+	 * As there's always a load from the MPU, set SMPS12 to always run
+	 * in double mode to even the component stress.
 	 */
-	palmas_i2c_write_u8(TPS65903X_CHIP_P1, 0xA0, 0x1);
+	palmas_i2c_read_u8(TPS65903X_CHIP_P1, SMPS_CTRL, &ctrl);
+	ctrl = (ctrl & ~SMPS_CTRL_123_PHASE(SMPS_CTRL_PHASE_MASK)) |
+	       SMPS_CTRL_123_PHASE(SMPS_CTRL_PHASE_DOUBLE);
+	palmas_i2c_write_u8(TPS65903X_CHIP_P1, SMPS_CTRL, ctrl);
 	return 0;
 }
 

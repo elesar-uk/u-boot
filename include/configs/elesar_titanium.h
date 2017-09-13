@@ -130,9 +130,9 @@
 #define CONFIG_OMAP_USB3PHY1_HOST
 
 /* SATA */
+#define CONFIG_BOARD_LATE_INIT
 /* Disabled by default as it slows down the boot process. */
 #if 0
-#define CONFIG_BOARD_LATE_INIT
 #define CONFIG_CMD_SCSI
 #define CONFIG_LIBATA
 #define CONFIG_SCSI_AHCI

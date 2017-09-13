@@ -79,6 +79,17 @@
 #define SMPS_MODE_SLP_ECO	(2 << 2)
 #define SMPS_MODE_SLP_FPWM	(3 << 2)
 
+/* SMPS_CTRL */
+#define SMPS_CTRL		0x44
+#define SMPS_CTRL_45_457_EN	(1 << 5)
+#define SMPS_CTRL_12_123_EN	(1 << 4)
+#define SMPS_CTRL_45_PHASE(p)	((p) << 2)
+#define SMPS_CTRL_123_PHASE(p)	((p) << 0)
+#define SMPS_CTRL_PHASE_MASK	3
+#define SMPS_CTRL_PHASE_AUTO	0	/* Also, 3 */
+#define SMPS_CTRL_PHASE_SINGLE	1	/* Force */
+#define SMPS_CTRL_PHASE_DOUBLE	2	/* Force */
+
 /*
  * Some popular SMPS voltages, all with RANGE=1; note
  * that RANGE cannot be changed on the fly
