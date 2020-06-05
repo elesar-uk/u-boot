@@ -1,0 +1,12 @@
+if TARGET_ELESAR_TITANIUM
+
+config SYS_BOARD
+	default "titanium"
+
+config SYS_VENDOR
+	default "elesar"
+
+config SYS_CONFIG_NAME
+	default "elesar_titanium"
+
+endif

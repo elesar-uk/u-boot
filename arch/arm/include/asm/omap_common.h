@@ -481,6 +481,10 @@ struct omap_sys_ctrl_regs {
 	u32 iodelay_config_base;
 	u32 ctrl_core_sma_sw_0;
 	u32 ctrl_core_sma_sw_1;
+	u32 control_sma_sw_6;
+	u32 control_pcie_pcs;
+	u32 control_pcie_pcs_revision;
+	u32 control_pcie_control;
 };
 
 #if defined(CONFIG_OMAP44XX) || defined(CONFIG_OMAP54XX)

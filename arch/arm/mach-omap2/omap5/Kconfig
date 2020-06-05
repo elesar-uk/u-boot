@@ -41,6 +41,16 @@ config TARGET_AM57XX_EVM
 	imply SPL_THERMAL
 	imply TI_DRA7_THERMAL
 
+config TARGET_ELESAR_TITANIUM
+	bool "Elesar Titanium"
+	select BOARD_LATE_INIT
+	select CMD_DDR3
+	select DRA7XX
+	imply DM_THERMAL
+	imply SCSI
+	imply SPL_THERMAL
+	imply TI_DRA7_THERMAL
+
 endchoice
 
 config SYS_SOC
@@ -63,7 +73,7 @@ config OMAP_PLATFORM_RESET_TIME_MAX_USEC
 	  3: Voltage ramp time, which can be derived using the PMIC slew rate
 	     and value of voltage ramp needed.
 
-if TARGET_DRA7XX_EVM || TARGET_AM57XX_EVM
+if TARGET_DRA7XX_EVM || TARGET_AM57XX_EVM || TARGET_ELESAR_TITANIUM
 menu "Voltage Domain OPP selections"
 
 choice
@@ -160,5 +170,6 @@ source "board/compulab/cm_t54/Kconfig"
 source "board/ti/omap5_uevm/Kconfig"
 source "board/ti/dra7xx/Kconfig"
 source "board/ti/am57xx/Kconfig"
+source "board/elesar/titanium/Kconfig"
 
 endif
