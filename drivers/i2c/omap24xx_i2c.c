@@ -1000,21 +1000,37 @@ U_BOOT_I2C_ADAP_COMPLETE(omap24_4, omap24_i2c_init, omap24_i2c_probe,
 static int omap_i2c_xfer(struct udevice *bus, struct i2c_msg *msg, int nmsgs)
 {
 	struct omap_i2c *priv = dev_get_priv(bus);
+	uint offset = 0;
+	uint offset_len = 0;
 	int ret;
 
 	debug("i2c_xfer: %d messages\n", nmsgs);
+	/*
+	 * If there are two messages and the first one has a length of 1 or 2
+	 * then this is an offset followed by a read/write, so glue them
+	 * back together before calling the transfer function.
+	 */
+	if (nmsgs == 2 && (msg->len == 1 || msg->len == 2)) {
+		offset = msg->buf[0];
+		offset_len = msg->len;
+		if (offset_len == 2) {
+			offset = (offset << 8) | msg->buf[1];
+		}
+		nmsgs--;
+		msg++;
+	}
 	for (; nmsgs > 0; nmsgs--, msg++) {
 		debug("i2c_xfer: chip=0x%x, len=0x%x\n", msg->addr, msg->len);
 		if (msg->flags & I2C_M_RD) {
 			ret = __omap24_i2c_read(priv->regs, priv->ip_rev,
 						priv->waitdelay,
-						msg->addr, 0, 0, msg->buf,
-						msg->len);
+						msg->addr, offset, offset_len,
+						msg->buf, msg->len);
 		} else {
 			ret = __omap24_i2c_write(priv->regs, priv->ip_rev,
 						 priv->waitdelay,
-						 msg->addr, 0, 0, msg->buf,
-						 msg->len);
+						 msg->addr, offset, offset_len,
+						 msg->buf, msg->len);
 		}
 		if (ret) {
 			debug("i2c_write: error sending\n");
