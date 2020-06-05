@@ -80,6 +80,210 @@
 #define CONFIG_SYS_I2C
 #endif
 
+/* Add eewiki boot definitions */
+
+#define EEWIKI_MMC_BOOT \
+	"mmc_boot=${interface} dev ${mmcdev}; " \
+		"if ${interface} rescan; then " \
+			"echo Scanning ${interface} device ${mmcdev};" \
+			"setenv bootpart ${mmcdev}:1; " \
+			"echo Checking for: /uEnv.txt ...;" \
+			"if test -e ${interface} ${bootpart} /uEnv.txt; then " \
+				"load ${interface} ${bootpart} ${loadaddr} /uEnv.txt;" \
+				"env import -t ${loadaddr} ${filesize};" \
+				"echo Loaded environment from /uEnv.txt;" \
+				"echo Checking if uenvcmd is set ...;" \
+				"if test -n ${uenvcmd}; then " \
+					"echo Running uenvcmd ...;" \
+					"run uenvcmd;" \
+				"fi;" \
+			"fi; " \
+			"echo Checking for: /boot/uEnv.txt ...;" \
+			"for i in 1 2 3 4 5 6 7 ; do " \
+				"setenv mmcpart ${i};" \
+				"setenv bootpart ${mmcdev}:${mmcpart};" \
+				"if test -e ${interface} ${bootpart} /boot/uEnv.txt; then " \
+					"load ${interface} ${bootpart} ${loadaddr} /boot/uEnv.txt;" \
+					"env import -t ${loadaddr} ${filesize};" \
+					"echo Loaded environment from /boot/uEnv.txt;" \
+					"if test -n ${dtb}; then " \
+						"setenv fdtfile ${dtb};" \
+						"echo debug: [dtb=${fdtfile}] ...;" \
+					"fi;" \
+					"echo Checking if uname_r is set in /boot/uEnv.txt ...;" \
+					"if test -n ${uname_r}; then " \
+						"echo debug: [uname_r=${uname_r}] ...;" \
+						"setenv oldroot /dev/mmcblk${mmcdev}p${mmcpart};" \
+						"run uname_boot;" \
+					"fi;" \
+				"fi;" \
+			"done;" \
+		"fi;\0" \
+
+#define EEWIKI_SCSI_BOOT \
+	"scsi_boot=${interface} reset ; " \
+		"if ${interface} dev ${mmcdev}; then " \
+			"echo Scanning ${interface} device ${mmcdev};" \
+			"setenv bootpart ${mmcdev}:1; " \
+			"echo Checking for: /uEnv.txt ...;" \
+			"if test -e ${interface} ${bootpart} /uEnv.txt; then " \
+				"load ${interface} ${bootpart} ${loadaddr} /uEnv.txt;" \
+				"env import -t ${loadaddr} ${filesize};" \
+				"echo Loaded environment from /uEnv.txt;" \
+				"echo Checking if uenvcmd is set ...;" \
+				"if test -n ${uenvcmd}; then " \
+					"echo Running uenvcmd ...;" \
+					"run uenvcmd;" \
+				"fi;" \
+			"fi; " \
+			"echo Checking for: /boot/uEnv.txt ...;" \
+			"for i in 1 2 3 4 ; do " \
+				"setenv mmcpart ${i};" \
+				"setenv bootpart ${mmcdev}:${mmcpart};" \
+				"if test -e ${interface} ${bootpart} /boot/uEnv.txt; then " \
+					"load ${interface} ${bootpart} ${loadaddr} /boot/uEnv.txt;" \
+					"env import -t ${loadaddr} ${filesize};" \
+					"echo Loaded environment from /boot/uEnv.txt;" \
+					"if test -n ${dtb}; then " \
+						"setenv fdtfile ${dtb};" \
+						"echo debug: [dtb=${fdtfile}] ...;" \
+					"fi;" \
+					"echo Checking if uname_r is set in /boot/uEnv.txt ...;" \
+					"if test -n ${uname_r}; then " \
+						"echo debug: [uname_r=${uname_r}] ...;" \
+						"setenv oldroot /dev/sda${mmcpart};" \
+						"run uname_boot;" \
+					"fi;" \
+				"fi;" \
+			"done;" \
+		"fi;\0" \
+
+#define EEWIKI_USB_BOOT \
+	"usb_boot=${interface} reset ; " \
+		"if ${interface} dev ${mmcdev}; then " \
+			"echo Scanning ${interface} device ${mmcdev};" \
+			"setenv bootpart ${mmcdev}:1; " \
+			"echo Checking for: /uEnv.txt ...;" \
+			"if test -e ${interface} ${bootpart} /uEnv.txt; then " \
+				"load ${interface} ${bootpart} ${loadaddr} /uEnv.txt;" \
+				"env import -t ${loadaddr} ${filesize};" \
+				"echo Loaded environment from /uEnv.txt;" \
+				"echo Checking if uenvcmd is set in /uEnv.txt ...;" \
+				"if test -n ${uenvcmd}; then " \
+					"echo Running uenvcmd ...;" \
+					"run uenvcmd;" \
+				"fi;" \
+			"fi; " \
+			"echo Checking for: /boot/uEnv.txt ...;" \
+			"for i in 1 2 3 4 ; do " \
+				"setenv mmcpart ${i};" \
+				"setenv bootpart ${mmcdev}:${mmcpart};" \
+				"if test -e ${interface} ${bootpart} /boot/uEnv.txt; then " \
+					"load ${interface} ${bootpart} ${loadaddr} /boot/uEnv.txt;" \
+					"env import -t ${loadaddr} ${filesize};" \
+					"echo Loaded environment from /boot/uEnv.txt;" \
+					"if test -n ${dtb}; then " \
+						"setenv fdtfile ${dtb};" \
+						"echo debug: [dtb=${fdtfile}] ...;" \
+					"fi;" \
+					"echo Checking if uname_r is set in /boot/uEnv.txt ...;" \
+					"if test -n ${uname_r}; then " \
+						"echo debug: [uname_r=${uname_r}] ...;" \
+						"setenv oldroot /dev/sda${mmcpart};" \
+						"run uname_boot;" \
+					"fi;" \
+				"fi;" \
+			"done;" \
+		"fi;\0" \
+
+#define EEWIKI_UNAME_BOOT \
+	"uname_boot="\
+		"setenv bootdir /boot; " \
+		"setenv bootfile vmlinuz-${uname_r}; " \
+		"if test -e ${interface} ${bootpart} ${bootdir}/${bootfile}; then " \
+			"echo loading ${bootdir}/${bootfile} ...; "\
+			"run loadimage;" \
+			"setenv fdtdir /boot/dtbs/${uname_r}; " \
+			"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+				"run loadfdt;" \
+			"else " \
+				"setenv fdtdir /usr/lib/linux-image-${uname_r}; " \
+				"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+					"run loadfdt;" \
+				"else " \
+					"setenv fdtdir /lib/firmware/${uname_r}/device-tree; " \
+					"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+						"run loadfdt;" \
+					"else " \
+						"setenv fdtdir /boot/dtb-${uname_r}; " \
+						"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+							"run loadfdt;" \
+						"else " \
+							"setenv fdtdir /boot/dtbs; " \
+							"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+								"run loadfdt;" \
+							"else " \
+								"setenv fdtdir /boot/dtb; " \
+								"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+									"run loadfdt;" \
+								"else " \
+									"setenv fdtdir /boot; " \
+									"if test -e ${interface} ${bootpart} ${fdtdir}/${fdtfile}; then " \
+										"run loadfdt;" \
+									"else " \
+										"echo; echo unable to find ${fdtfile} ...; echo booting legacy ...;"\
+										"run args_mmc;" \
+										"echo debug: [${bootargs}] ... ;" \
+										"echo debug: [bootz ${loadaddr}] ... ;" \
+										"bootz ${loadaddr}; " \
+									"fi;" \
+								"fi;" \
+							"fi;" \
+						"fi;" \
+					"fi;" \
+				"fi;" \
+			"fi; " \
+			"setenv rdfile initrd.img-${uname_r}; " \
+			"if test -e ${interface} ${bootpart} ${bootdir}/${rdfile}; then " \
+				"echo loading ${bootdir}/${rdfile} ...; "\
+				"run loadrd;" \
+				"if test -n ${netinstall_enable}; then " \
+					"run args_netinstall; run message;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+				"fi;" \
+				"if test -n ${uenv_root}; then " \
+					"run args_uenv_root;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+				"fi;" \
+				"if test -n ${uuid}; then " \
+					"run args_mmc_uuid;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+				"else " \
+					"run args_mmc_old;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} ${rdaddr}:${rdsize} ${fdtaddr}; " \
+				"fi;" \
+			"else " \
+				"if test -n ${uenv_root}; then " \
+					"run args_uenv_root;" \
+					"echo debug: [${bootargs}] ... ;" \
+					"echo debug: [bootz ${loadaddr} - ${fdtaddr}] ... ;" \
+					"bootz ${loadaddr} - ${fdtaddr}; " \
+				"fi;" \
+				"run args_mmc_old;" \
+				"echo debug: [${bootargs}] ... ;" \
+				"echo debug: [bootz ${loadaddr} - ${fdtaddr}] ... ;" \
+				"bootz ${loadaddr} - ${fdtaddr}; " \
+			"fi;" \
+		"fi;\0" \
+
 /*
  * The following are general good-enough settings for U-Boot.  We set a
  * large malloc pool as we generally have a lot of DDR, and we opt for
